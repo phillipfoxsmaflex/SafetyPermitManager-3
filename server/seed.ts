@@ -1,9 +1,7 @@
 import { config } from "dotenv";
 import { resolve } from "path";
-import { db } from "./db";
-import { users, permits } from "@shared/schema";
 
-// Load environment variables from .env file
+// Load environment variables from .env file FIRST
 // Try to find .env in current directory or parent directory
 const envPath = resolve(process.cwd(), '.env');
 config({ path: envPath });
@@ -11,9 +9,19 @@ config({ path: envPath });
 console.log(`Loading environment from: ${envPath}`);
 console.log(`DATABASE_URL exists: ${!!process.env.DATABASE_URL}`);
 
+if (!process.env.DATABASE_URL) {
+  console.error("ERROR: DATABASE_URL is not set in environment!");
+  console.error("Please check that the .env file exists and contains DATABASE_URL");
+  process.exit(1);
+}
+
 async function seed() {
   try {
     console.log("Seeding database...");
+    
+    // Dynamic imports after environment is loaded
+    const { db } = await import("./db.js");
+    const { users, permits } = await import("@shared/schema");
     
     // Create default users
     const defaultUsers = [
