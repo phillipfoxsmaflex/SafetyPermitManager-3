@@ -195,6 +195,9 @@ install_npm_dependencies() {
     # npm cache leeren (falls vorhanden)
     npm cache clean --force 2>/dev/null || true
     
+    # Alte Build-Dateien löschen
+    rm -rf dist node_modules/.cache 2>/dev/null || true
+    
     # Abhängigkeiten installieren
     npm install
     
