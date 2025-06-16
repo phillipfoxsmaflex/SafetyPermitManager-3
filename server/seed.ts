@@ -1,5 +1,15 @@
+import { config } from "dotenv";
+import { resolve } from "path";
 import { db } from "./db";
 import { users, permits } from "@shared/schema";
+
+// Load environment variables from .env file
+// Try to find .env in current directory or parent directory
+const envPath = resolve(process.cwd(), '.env');
+config({ path: envPath });
+
+console.log(`Loading environment from: ${envPath}`);
+console.log(`DATABASE_URL exists: ${!!process.env.DATABASE_URL}`);
 
 async function seed() {
   try {
