@@ -395,6 +395,10 @@ install_to_opt() {
     # Wechsle in das neue Verzeichnis
     cd "$TARGET_DIR"
     
+    # Rebuild nach Konfigurationsänderungen
+    log_info "Rebuilding Anwendung nach Konfigurationsänderungen..."
+    npm run build
+    
     # Erstelle Development-Wrapper Script
     log_info "Erstelle Development-Wrapper Script..."
     cat > dev.sh << 'EOF'
