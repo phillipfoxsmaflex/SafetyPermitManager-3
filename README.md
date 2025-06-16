@@ -1,6 +1,9 @@
-# Biggs - Digital Permit Management System
+# SafetyPermitManager-3 - Digital Permit Management System
 
 Ein umfassendes Arbeitserlaubnis-Management-System für die chemische Industrie mit AI-gestützter Sicherheitsanalyse und vollständiger TRBS-konformer Gefährdungsbeurteilung.
+
+> **🚀 Schnellstart:** Für eine sofortige Installation siehe [QUICKSTART.md](QUICKSTART.md)  
+> **📋 Detaillierte Installation:** Siehe [INSTALLATION.md](INSTALLATION.md)
 
 ## 🚀 Hauptfunktionen
 
@@ -52,67 +55,227 @@ Ein umfassendes Arbeitserlaubnis-Management-System für die chemische Industrie 
 
 ## 📋 Installation & Setup
 
-### Automatisierte Installation (Empfohlen)
+### 🚀 Automatisierte Installation für Debian 12 (Empfohlen)
+
+Das vollautomatische Installationsskript richtet das komplette System in wenigen Minuten ein:
 
 ```bash
 # Repository klonen
-git clone <repository-url>
-cd biggs-permit-system
+git clone https://github.com/phillipfoxsmaflex/SafetyPermitManager-3.git
+cd SafetyPermitManager-3
 
-# Vollständige Installation
-chmod +x install.sh
-./install.sh
+# Vollständige Installation ausführen
+chmod +x install-debian12.sh
+./install-debian12.sh
 ```
 
-Das Installationsskript führt automatisch aus:
-- Prüfung und Installation von Node.js 18+ und PostgreSQL
-- Installation aller npm-Abhängigkeiten
-- Erstellung der Datenbank und Benutzer
-- Generierung sicherer Passwörter und Session-Secrets
-- Initialisierung des Datenbankschemas
-- Erstellung der .env-Datei mit sicheren Standardwerten
+**Das Installationsskript führt automatisch aus:**
+- ✅ System-Updates und Abhängigkeiten
+- ✅ Node.js 18+ Installation
+- ✅ PostgreSQL Installation und Konfiguration
+- ✅ Datenbank und Benutzer-Erstellung
+- ✅ Sichere Passwort-Generierung
+- ✅ npm-Abhängigkeiten Installation
+- ✅ Datenbank-Schema Initialisierung
+- ✅ Admin-Benutzer Erstellung (admin/password123)
+- ✅ .env-Datei mit sicheren Einstellungen
+- ✅ systemd Service-Konfiguration
+- ✅ Backup-Script Erstellung
+- ✅ Vollständige Funktionsprüfung
 
-### Manuelle Installation
+### 📋 Schritt-für-Schritt Installationsanleitung
 
+#### Schritt 1: System vorbereiten
 ```bash
-# System-Abhängigkeiten (Ubuntu/Debian)
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs postgresql postgresql-contrib
-
-# Datenbank erstellen
-sudo -u postgres psql
-```
-```sql
-CREATE DATABASE biggs_permits;
-CREATE USER biggs_user WITH PASSWORD 'secure_password';
-GRANT ALL PRIVILEGES ON DATABASE biggs_permits TO biggs_user;
-ALTER USER biggs_user CREATEDB;
-\q
+# Als normaler Benutzer (NICHT als root!)
+# Stellen Sie sicher, dass Sie sudo-Berechtigung haben
+sudo apt-get update
 ```
 
+#### Schritt 2: Repository klonen
 ```bash
-# Projekt setup
-npm install
-cp .env.example .env
-# .env bearbeiten mit Ihren Einstellungen
+# Projekt herunterladen
+git clone https://github.com/phillipfoxsmaflex/SafetyPermitManager-3.git
+cd SafetyPermitManager-3
 
-# Datenbank initialisieren
-npm run db:push
+# Installationsskript ausführbar machen
+chmod +x install-debian12.sh
+```
 
-# Beispieldaten laden (optional)
-npx tsx server/seed.ts
+#### Schritt 3: Installation starten
+```bash
+# Vollautomatische Installation
+./install-debian12.sh
+```
 
-# Development Server starten
+**Installationsdauer:** ca. 5-10 Minuten (abhängig von der Internetverbindung)
+
+#### Schritt 4: Anwendung starten
+
+**Development-Modus:**
+```bash
 npm run dev
 ```
 
-### Wichtige Umgebungsvariablen
+**Production-Modus:**
+```bash
+# Service starten
+sudo systemctl start safety-permit-manager
+
+# Service-Status prüfen
+sudo systemctl status safety-permit-manager
+
+# Logs anzeigen
+sudo journalctl -u safety-permit-manager -f
+```
+
+#### Schritt 5: Erste Anmeldung
+1. Öffnen Sie http://localhost:5000 im Browser
+2. Melden Sie sich mit dem automatisch erstellten Admin-Benutzer an:
+   - **Username:** `admin`
+   - **Passwort:** `password123`
+3. Konfigurieren Sie das System und ändern Sie das Admin-Passwort
+
+### 🔧 Manuelle Installation (für Experten)
+
+Falls Sie die Installation manuell durchführen möchten:
+
+#### System-Abhängigkeiten installieren
+```bash
+# Node.js 18+ installieren
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# PostgreSQL installieren
+sudo apt-get install -y postgresql postgresql-contrib
+
+# Weitere Abhängigkeiten
+sudo apt-get install -y build-essential git openssl
+```
+
+#### PostgreSQL konfigurieren
+```bash
+# PostgreSQL starten
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+
+# Datenbank und Benutzer erstellen
+sudo -u postgres psql
+```
+
+```sql
+-- In der PostgreSQL Shell:
+CREATE DATABASE biggs_permits;
+CREATE USER biggs_user WITH PASSWORD 'IhrSicheresPasswort123!';
+GRANT ALL PRIVILEGES ON DATABASE biggs_permits TO biggs_user;
+ALTER USER biggs_user CREATEDB;
+
+-- Verbindung zur Datenbank
+\c biggs_permits
+
+-- Schema-Berechtigungen
+GRANT ALL ON SCHEMA public TO biggs_user;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO biggs_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO biggs_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO biggs_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO biggs_user;
+
+\q
+```
+
+#### Projekt konfigurieren
+```bash
+# npm-Abhängigkeiten installieren
+npm install
+
+# Umgebungsvariablen konfigurieren
+cp .env.example .env
+nano .env  # Bearbeiten Sie die Datei mit Ihren Einstellungen
+```
+
+#### .env-Datei konfigurieren
 ```env
-DATABASE_URL=postgresql://biggs_user:password@localhost:5432/biggs_permits
-SESSION_SECRET=your-64-character-secure-secret
+# Wichtige Einstellungen in .env:
+DATABASE_URL=postgresql://biggs_user:IhrSicheresPasswort123!@localhost:5432/biggs_permits
+SESSION_SECRET=IhrSehr-Langes-Und-Sicheres-Session-Secret-Mit-64-Zeichen
 NODE_ENV=development
-WEBHOOK_URL=https://your-ai-service.com/webhook  # Optional
-MAX_FILE_SIZE=10485760
+PORT=5000
+```
+
+#### Datenbank initialisieren
+```bash
+# Schema erstellen
+npm run db:push
+
+# Optional: Beispieldaten laden
+npx tsx server/seed.ts
+```
+
+#### Anwendung bauen und starten
+```bash
+# Für Development
+npm run dev
+
+# Für Production
+npm run build
+npm start
+```
+
+### 🔐 Wichtige Sicherheitshinweise
+
+#### Nach der Installation prüfen:
+- [ ] Starke Datenbank-Passwörter verwendet
+- [ ] Session-Secret ist mindestens 64 Zeichen lang
+- [ ] .env-Datei hat korrekte Berechtigungen (600)
+- [ ] PostgreSQL ist nur lokal erreichbar
+- [ ] Firewall ist konfiguriert
+
+#### Passwort-Sicherheit:
+```bash
+# Sichere Passwörter generieren:
+openssl rand -base64 32  # Für Datenbank-Passwort
+openssl rand -base64 64  # Für Session-Secret
+```
+
+### 📁 Wichtige Dateien und Verzeichnisse
+
+Nach der Installation finden Sie:
+```
+SafetyPermitManager-3/
+├── .env                    # Konfigurationsdatei (VERTRAULICH!)
+├── install-debian12.sh     # Installationsskript
+├── backup.sh              # Backup-Script
+├── uploads/               # Datei-Uploads
+├── logs/                  # Log-Dateien
+├── backups/               # Backup-Verzeichnis
+├── dist/                  # Gebaute Anwendung
+└── node_modules/          # npm-Abhängigkeiten
+```
+
+### 🔄 Backup und Wartung
+
+#### Automatisches Backup erstellen:
+```bash
+# Backup-Script ausführen
+./backup.sh
+
+# Automatisches tägliches Backup einrichten
+echo "0 2 * * * cd $(pwd) && ./backup.sh" | crontab -
+```
+
+#### System-Wartung:
+```bash
+# Service-Status prüfen
+sudo systemctl status safety-permit-manager
+
+# Logs anzeigen
+sudo journalctl -u safety-permit-manager -f
+
+# Service neu starten
+sudo systemctl restart safety-permit-manager
+
+# Datenbank-Verbindung testen
+PGPASSWORD='IhrPasswort' psql -h localhost -U biggs_user -d biggs_permits -c "SELECT version();"
 ```
 
 ## 🔌 AI-Integration
@@ -347,48 +510,295 @@ npm run db:push
 - [ ] Monitoring-Alerts konfiguriert
 - [ ] SSL-Zertifikat Auto-Renewal getestet
 
-## 🔧 Troubleshooting
+## ⚡ Schnellstart-Anleitung
 
-### Häufige Probleme
-1. **Datenbankverbindung fehlgeschlagen**
-   - DATABASE_URL Format prüfen
-   - PostgreSQL-Status: `sudo systemctl status postgresql`
-   - Verbindung testen: `psql $DATABASE_URL`
+Für erfahrene Benutzer - Installation in 3 Befehlen:
 
-2. **Session-Fehler**
-   - SESSION_SECRET gesetzt prüfen
-   - Cookie-Domain-Konfiguration prüfen
-   - Browser-Cookies löschen
-
-3. **File-Upload-Fehler**
-   - uploads/ Verzeichnis-Berechtigungen prüfen
-   - MAX_FILE_SIZE Einstellung prüfen
-   - Festplattenspeicher prüfen
-
-4. **Build-Fehler**
-   - `rm -rf node_modules && npm install`
-   - Node.js Version: `node --version`
-   - Dependencies aktualisieren: `npm update`
-
-### Log-Überwachung
 ```bash
-# PM2 Logs
-pm2 logs biggs-permits
-
-# System-Logs
-sudo tail -f /var/log/postgresql/postgresql-14-main.log
-
-# Systemressourcen
-htop
+git clone https://github.com/phillipfoxsmaflex/SafetyPermitManager-3.git
+cd SafetyPermitManager-3
+./install-debian12.sh && npm run dev
 ```
 
-### Health Check
-```bash
-# Service-Check
-curl -f http://localhost:5000/api/auth/user || echo "Service down"
+Nach der Installation: http://localhost:5000 öffnen und Admin-Benutzer erstellen.
 
-# Monitoring-Cron
-echo "*/5 * * * * curl -f http://localhost:5000/api/auth/user || echo 'Biggs service down' | mail admin@yourdomain.com" | crontab -
+## 🔧 Troubleshooting & Fehlerbehebung
+
+### 🚨 Häufige Installationsprobleme
+
+#### 1. **Installationsskript schlägt fehl**
+```bash
+# Prüfen Sie die Berechtigung
+ls -la install-debian12.sh
+
+# Script ausführbar machen
+chmod +x install-debian12.sh
+
+# Als normaler Benutzer ausführen (NICHT als root)
+whoami  # Sollte NICHT "root" anzeigen
+
+# Detaillierte Ausgabe aktivieren
+bash -x ./install-debian12.sh
+```
+
+#### 2. **Node.js Installation fehlgeschlagen**
+```bash
+# Manuelle Node.js Installation
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Version prüfen
+node --version  # Sollte v18.x.x oder höher sein
+npm --version
+```
+
+#### 3. **PostgreSQL Verbindungsfehler**
+```bash
+# PostgreSQL Status prüfen
+sudo systemctl status postgresql
+
+# PostgreSQL starten falls gestoppt
+sudo systemctl start postgresql
+
+# Verbindung testen
+sudo -u postgres psql -c "SELECT version();"
+
+# Benutzer und Datenbank prüfen
+sudo -u postgres psql -c "\du"  # Benutzer anzeigen
+sudo -u postgres psql -c "\l"   # Datenbanken anzeigen
+```
+
+#### 4. **npm Installation Fehler**
+```bash
+# npm Cache leeren
+npm cache clean --force
+
+# node_modules löschen und neu installieren
+rm -rf node_modules package-lock.json
+npm install
+
+# Bei Berechtigungsfehlern
+sudo chown -R $(whoami) ~/.npm
+```
+
+### 🔍 Laufzeit-Probleme diagnostizieren
+
+#### 1. **Anwendung startet nicht**
+```bash
+# .env Datei prüfen
+cat .env | grep -E "(DATABASE_URL|SESSION_SECRET|PORT)"
+
+# Datenbankverbindung testen
+PGPASSWORD='IhrPasswort' psql -h localhost -U biggs_user -d biggs_permits -c "SELECT 1;"
+
+# Port-Konflikte prüfen
+sudo netstat -tlnp | grep :5000
+
+# Logs anzeigen
+npm run dev  # Für detaillierte Fehlermeldungen
+```
+
+#### 2. **Datenbankfehler**
+```bash
+# Datenbank-Schema prüfen
+PGPASSWORD='IhrPasswort' psql -h localhost -U biggs_user -d biggs_permits -c "\dt"
+
+# Schema neu erstellen
+npm run db:push
+
+# Datenbank-Logs prüfen
+sudo tail -f /var/log/postgresql/postgresql-*.log
+```
+
+#### 3. **Session/Login-Probleme**
+```bash
+# Session-Secret prüfen
+grep SESSION_SECRET .env
+
+# Browser-Cache und Cookies löschen
+# Oder Inkognito-Modus verwenden
+
+# Cookie-Domain prüfen
+grep COOKIE_DOMAIN .env
+```
+
+#### 4. **File-Upload Fehler**
+```bash
+# Upload-Verzeichnis prüfen
+ls -la uploads/
+mkdir -p uploads
+chmod 755 uploads
+
+# Festplattenspeicher prüfen
+df -h
+
+# Dateigrößen-Limit prüfen
+grep MAX_FILE_SIZE .env
+```
+
+### 📊 System-Monitoring
+
+#### Service-Status überwachen
+```bash
+# Service-Status
+sudo systemctl status safety-permit-manager
+
+# Service-Logs in Echtzeit
+sudo journalctl -u safety-permit-manager -f
+
+# Service neu starten
+sudo systemctl restart safety-permit-manager
+
+# Service-Konfiguration prüfen
+sudo systemctl cat safety-permit-manager
+```
+
+#### Performance-Monitoring
+```bash
+# Systemressourcen
+htop
+free -h
+df -h
+
+# Netzwerk-Verbindungen
+sudo netstat -tlnp | grep node
+
+# Prozess-Details
+ps aux | grep node
+```
+
+#### Datenbank-Performance
+```bash
+# Aktive Verbindungen
+PGPASSWORD='IhrPasswort' psql -h localhost -U biggs_user -d biggs_permits -c "SELECT count(*) FROM pg_stat_activity;"
+
+# Datenbank-Größe
+PGPASSWORD='IhrPasswort' psql -h localhost -U biggs_user -d biggs_permits -c "SELECT pg_size_pretty(pg_database_size('biggs_permits'));"
+
+# Tabellen-Größen
+PGPASSWORD='IhrPasswort' psql -h localhost -U biggs_user -d biggs_permits -c "SELECT schemaname,tablename,pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size FROM pg_tables WHERE schemaname='public' ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;"
+```
+
+### 🔧 Wartung und Updates
+
+#### Regelmäßige Wartung
+```bash
+# System-Updates
+sudo apt-get update && sudo apt-get upgrade -y
+
+# npm-Abhängigkeiten aktualisieren
+npm update
+
+# Datenbank-Wartung
+PGPASSWORD='IhrPasswort' psql -h localhost -U biggs_user -d biggs_permits -c "VACUUM ANALYZE;"
+
+# Log-Rotation
+sudo logrotate -f /etc/logrotate.conf
+```
+
+#### Backup-Verifikation
+```bash
+# Backup erstellen
+./backup.sh
+
+# Backup-Integrität prüfen
+ls -la backups/
+pg_dump --version
+
+# Restore-Test (auf Testsystem)
+# PGPASSWORD='IhrPasswort' psql -h localhost -U biggs_user -d test_db < backups/db_backup_YYYYMMDD_HHMMSS.sql
+```
+
+### 🆘 Notfall-Wiederherstellung
+
+#### Bei kritischen Fehlern
+```bash
+# 1. Service stoppen
+sudo systemctl stop safety-permit-manager
+
+# 2. Backup wiederherstellen
+PGPASSWORD='IhrPasswort' psql -h localhost -U biggs_user -d biggs_permits < backups/latest_backup.sql
+
+# 3. Konfiguration wiederherstellen
+cp backups/env_backup_YYYYMMDD .env
+
+# 4. Anwendung neu bauen
+npm run build
+
+# 5. Service starten
+sudo systemctl start safety-permit-manager
+```
+
+#### Komplette Neuinstallation
+```bash
+# 1. Daten sichern
+./backup.sh
+
+# 2. Alte Installation entfernen
+sudo systemctl stop safety-permit-manager
+sudo systemctl disable safety-permit-manager
+sudo rm /etc/systemd/system/safety-permit-manager.service
+
+# 3. Neuinstallation
+./install-debian12.sh
+
+# 4. Daten wiederherstellen
+# (Backup-Dateien manuell wiederherstellen)
+```
+
+### 📞 Support und Hilfe
+
+#### Logs sammeln für Support
+```bash
+# System-Informationen sammeln
+echo "=== System Info ===" > support_info.txt
+uname -a >> support_info.txt
+cat /etc/debian_version >> support_info.txt
+node --version >> support_info.txt
+npm --version >> support_info.txt
+
+echo "=== Service Status ===" >> support_info.txt
+sudo systemctl status safety-permit-manager >> support_info.txt
+
+echo "=== Recent Logs ===" >> support_info.txt
+sudo journalctl -u safety-permit-manager --since "1 hour ago" >> support_info.txt
+
+echo "=== Database Status ===" >> support_info.txt
+sudo systemctl status postgresql >> support_info.txt
+
+# Datei an Support senden
+```
+
+#### Health-Check Script
+```bash
+# Erstellen Sie ein Health-Check Script
+cat > health_check.sh << 'EOF'
+#!/bin/bash
+echo "=== SafetyPermitManager-3 Health Check ==="
+echo "Datum: $(date)"
+echo
+
+# Service Status
+echo "Service Status:"
+sudo systemctl is-active safety-permit-manager
+
+# Port Check
+echo "Port 5000 Status:"
+curl -s -o /dev/null -w "%{http_code}" http://localhost:5000 || echo "Nicht erreichbar"
+
+# Database Check
+echo "Datenbank Status:"
+PGPASSWORD='IhrPasswort' psql -h localhost -U biggs_user -d biggs_permits -c "SELECT 1;" > /dev/null 2>&1 && echo "OK" || echo "Fehler"
+
+# Disk Space
+echo "Festplattenspeicher:"
+df -h | grep -E "(/$|/var|/tmp)"
+
+echo "=== Health Check Complete ==="
+EOF
+
+chmod +x health_check.sh
+./health_check.sh
 ```
 
 ## 📄 Lizenz
