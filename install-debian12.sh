@@ -261,6 +261,9 @@ REQUEST_LOGGING=true
 # AI_TIMEOUT=30000
 EOF
     
+    # Sichere Berechtigungen für .env Datei setzen
+    chmod 600 .env
+    
     log_success ".env Datei erstellt"
 }
 
@@ -358,6 +361,7 @@ Type=simple
 User=$USER
 WorkingDirectory=$WORK_DIR
 Environment=NODE_ENV=production
+EnvironmentFile=$WORK_DIR/.env
 ExecStart=/usr/bin/node dist/index.js
 Restart=always
 RestartSec=10
@@ -455,6 +459,17 @@ test_installation() {
         return 1
     fi
     
+    # Prüfe ob .env Datei existiert und DATABASE_URL enthält
+    if [[ ! -f ".env" ]]; then
+        log_error ".env Datei nicht gefunden!"
+        return 1
+    fi
+    
+    if ! grep -q "DATABASE_URL=" .env; then
+        log_error "DATABASE_URL nicht in .env Datei gefunden!"
+        return 1
+    fi
+    
     log_success "Installation erfolgreich getestet"
 }
 
@@ -496,9 +511,17 @@ show_summary() {
     echo
     echo "Nützliche Befehle:"
     echo "  • Service Status: sudo systemctl status safety-permit-manager"
+    echo "  • Service starten: sudo systemctl start safety-permit-manager"
+    echo "  • Service stoppen: sudo systemctl stop safety-permit-manager"
+    echo "  • Service neustarten: sudo systemctl restart safety-permit-manager"
     echo "  • Logs anzeigen: sudo journalctl -u safety-permit-manager -f"
     echo "  • Backup erstellen: ./backup.sh"
     echo "  • Datenbank-Shell: PGPASSWORD='$DB_PASSWORD' psql -h localhost -U biggs_user -d biggs_permits"
+    echo
+    echo "Fehlerbehebung:"
+    echo "  • Bei DATABASE_URL Fehlern: Prüfen Sie die .env Datei"
+    echo "  • Service lädt .env automatisch: EnvironmentFile ist konfiguriert"
+    echo "  • .env Berechtigungen: 600 (nur Besitzer kann lesen/schreiben)"
     echo
     log_warning "WICHTIG: Notieren Sie sich das Datenbank-Passwort: $DB_PASSWORD"
     echo
