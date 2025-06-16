@@ -295,7 +295,22 @@ initialize_database() {
     
     # Seede Datenbank mit Standard-Benutzern
     log_info "Erstelle Standard-Benutzer und Beispieldaten..."
-    npx tsx server/seed.ts
+    
+    # Prüfe ob .env Datei existiert
+    if [[ ! -f ".env" ]]; then
+        log_error ".env Datei nicht gefunden! Seeding wird übersprungen."
+        log_info "Sie können das Seeding später manuell ausführen mit: npx tsx server/seed.ts"
+        return 1
+    fi
+    
+    # Führe Seeding aus
+    if npx tsx server/seed.ts; then
+        log_success "Standard-Benutzer erfolgreich erstellt"
+    else
+        log_error "Seeding fehlgeschlagen. Sie können es später manuell ausführen:"
+        log_info "  cd /opt/SafetyPermitManager-3"
+        log_info "  npx tsx server/seed.ts"
+    fi
     
     log_success "Datenbank Schema initialisiert und geseedet"
 }
