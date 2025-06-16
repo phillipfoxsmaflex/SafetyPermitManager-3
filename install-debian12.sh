@@ -293,7 +293,11 @@ initialize_database() {
     # Drizzle Schema pushen
     npm run db:push
     
-    log_success "Datenbank Schema initialisiert"
+    # Seede Datenbank mit Standard-Benutzern
+    log_info "Erstelle Standard-Benutzer und Beispieldaten..."
+    npx tsx server/seed.ts
+    
+    log_success "Datenbank Schema initialisiert und geseedet"
 }
 
 # Erstelle Admin-Benutzer
@@ -607,6 +611,13 @@ show_summary() {
     echo "  • Port: 5000"
     echo "  • Upload-Verzeichnis: /opt/SafetyPermitManager-3/uploads"
     echo
+    echo "Standard-Anmeldedaten:"
+    echo "  • Admin: admin / password123"
+    echo "  • Supervisor: hans.mueller / password123"
+    echo "  • Safety Officer: safety.officer / password123"
+    echo "  • Operations Manager: ops.manager / password123"
+    echo "  • Employee: employee / password123"
+    echo
     echo "Wichtige Dateien:"
     echo "  • Konfiguration: /opt/SafetyPermitManager-3/.env"
     echo "  • Development Script: /opt/SafetyPermitManager-3/dev.sh"
@@ -637,6 +648,7 @@ show_summary() {
     echo "  • Logs anzeigen: sudo journalctl -u safety-permit-manager -f"
     echo "  • Backup erstellen: cd /opt/SafetyPermitManager-3 && ./backup.sh"
     echo "  • Datenbank-Shell: PGPASSWORD='$DB_PASSWORD' psql -h localhost -U biggs_user -d biggs_permits"
+    echo "  • Datenbank neu seeden: cd /opt/SafetyPermitManager-3 && npx tsx server/seed.ts"
     echo
     echo "Fehlerbehebung:"
     echo "  • Bei DATABASE_URL Fehlern: Prüfen Sie die .env Datei"
@@ -672,7 +684,6 @@ main() {
     create_env_file
     create_directories
     initialize_database
-    create_admin_user
     build_application
     install_to_opt
     create_systemd_service
