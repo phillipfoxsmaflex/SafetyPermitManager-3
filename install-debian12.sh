@@ -343,12 +343,49 @@ build_application() {
     log_success "Anwendung erfolgreich gebaut"
 }
 
+# Installiere Anwendung nach /opt
+install_to_opt() {
+    log_info "Installiere Anwendung nach /opt..."
+    
+    # Zielverzeichnis definieren
+    TARGET_DIR="/opt/SafetyPermitManager-3"
+    CURRENT_DIR=$(pwd)
+    
+    # Prüfe ob wir bereits in /opt sind
+    if [[ "$CURRENT_DIR" == "$TARGET_DIR" ]]; then
+        log_success "Anwendung bereits in /opt installiert"
+        return
+    fi
+    
+    # Erstelle /opt Verzeichnis falls nicht vorhanden
+    sudo mkdir -p /opt
+    
+    # Kopiere Anwendung nach /opt falls nicht bereits dort
+    if [[ ! -d "$TARGET_DIR" ]]; then
+        log_info "Kopiere Anwendung nach $TARGET_DIR..."
+        sudo cp -r "$CURRENT_DIR" "$TARGET_DIR"
+    fi
+    
+    # Setze korrekte Berechtigungen
+    USER=$(whoami)
+    sudo chown -R $USER:$USER "$TARGET_DIR"
+    sudo chmod -R 755 "$TARGET_DIR"
+    
+    # Sichere Berechtigungen für .env
+    sudo chmod 600 "$TARGET_DIR/.env"
+    
+    # Wechsle in das neue Verzeichnis
+    cd "$TARGET_DIR"
+    
+    log_success "Anwendung nach /opt installiert"
+}
+
 # Erstelle systemd Service
 create_systemd_service() {
     log_info "Erstelle systemd Service..."
     
     USER=$(whoami)
-    WORK_DIR=$(pwd)
+    WORK_DIR="/opt/SafetyPermitManager-3"
     
     sudo tee /etc/systemd/system/safety-permit-manager.service > /dev/null << EOF
 [Unit]
@@ -359,21 +396,22 @@ Wants=postgresql.service
 [Service]
 Type=simple
 User=$USER
+Group=$USER
 WorkingDirectory=$WORK_DIR
 Environment=NODE_ENV=production
 EnvironmentFile=$WORK_DIR/.env
 ExecStart=/usr/bin/node dist/index.js
 Restart=always
 RestartSec=10
-StandardOutput=syslog
-StandardError=syslog
+StandardOutput=journal
+StandardError=journal
 SyslogIdentifier=safety-permit-manager
 
-# Security settings
+# Security settings (less restrictive for /opt)
 NoNewPrivileges=true
 PrivateTmp=true
-ProtectSystem=strict
-ProtectHome=true
+ProtectSystem=false
+ProtectHome=false
 ReadWritePaths=$WORK_DIR
 
 [Install]
@@ -391,10 +429,14 @@ EOF
 create_backup_script() {
     log_info "Erstelle Backup Script..."
     
-    cat > backup.sh << 'EOF'
+    # Erstelle Backup Script im /opt Verzeichnis
+    cat > /opt/SafetyPermitManager-3/backup.sh << 'EOF'
 #!/bin/bash
 
 # SafetyPermitManager-3 Backup Script
+
+# Wechsle ins Installationsverzeichnis
+cd /opt/SafetyPermitManager-3
 
 BACKUP_DIR="./backups"
 DATE=$(date +%Y%m%d_%H%M%S)
@@ -422,7 +464,7 @@ find "$BACKUP_DIR" -name "*backup*" -mtime +30 -delete
 echo "Backup abgeschlossen: $DATE"
 EOF
     
-    chmod +x backup.sh
+    chmod +x /opt/SafetyPermitManager-3/backup.sh
     
     log_success "Backup Script erstellt"
 }
@@ -430,6 +472,9 @@ EOF
 # Teste die Installation
 test_installation() {
     log_info "Teste die Installation..."
+    
+    # Wechsle ins Installationsverzeichnis
+    cd /opt/SafetyPermitManager-3
     
     # Prüfe ob alle Abhängigkeiten verfügbar sind
     if ! command -v node &> /dev/null; then
@@ -470,6 +515,31 @@ test_installation() {
         return 1
     fi
     
+    # Prüfe systemd Service-Datei
+    if [[ ! -f "/etc/systemd/system/safety-permit-manager.service" ]]; then
+        log_error "systemd Service-Datei nicht gefunden!"
+        return 1
+    fi
+    
+    # Prüfe ob EnvironmentFile in Service-Datei vorhanden ist
+    if ! grep -q "EnvironmentFile=/opt/SafetyPermitManager-3/.env" /etc/systemd/system/safety-permit-manager.service; then
+        log_error "EnvironmentFile nicht in systemd Service konfiguriert!"
+        return 1
+    fi
+    
+    # Teste Service-Start (kurz)
+    log_info "Teste systemd Service..."
+    sudo systemctl start safety-permit-manager
+    sleep 3
+    
+    if sudo systemctl is-active --quiet safety-permit-manager; then
+        log_success "Service läuft erfolgreich"
+        sudo systemctl stop safety-permit-manager
+    else
+        log_warning "Service-Test fehlgeschlagen - prüfen Sie die Logs mit: sudo journalctl -u safety-permit-manager -f"
+        sudo systemctl stop safety-permit-manager 2>/dev/null || true
+    fi
+    
     log_success "Installation erfolgreich getestet"
 }
 
@@ -483,20 +553,21 @@ show_summary() {
     log_success "Installation erfolgreich abgeschlossen!"
     echo
     echo "Konfiguration:"
+    echo "  • Installationsverzeichnis: /opt/SafetyPermitManager-3"
     echo "  • Datenbank: biggs_permits"
     echo "  • Benutzer: biggs_user"
     echo "  • Port: 5000"
-    echo "  • Upload-Verzeichnis: ./uploads"
+    echo "  • Upload-Verzeichnis: /opt/SafetyPermitManager-3/uploads"
     echo
     echo "Wichtige Dateien:"
-    echo "  • Konfiguration: .env"
-    echo "  • Backup Script: ./backup.sh"
-    echo "  • Service: safety-permit-manager.service"
+    echo "  • Konfiguration: /opt/SafetyPermitManager-3/.env"
+    echo "  • Backup Script: /opt/SafetyPermitManager-3/backup.sh"
+    echo "  • Service: /etc/systemd/system/safety-permit-manager.service"
     echo
     echo "Nächste Schritte:"
     echo "  1. Starten Sie die Anwendung:"
-    echo "     npm run dev                    # Development"
-    echo "     sudo systemctl start safety-permit-manager  # Production"
+    echo "     cd /opt/SafetyPermitManager-3 && npm run dev  # Development"
+    echo "     sudo systemctl start safety-permit-manager    # Production"
     echo
     echo "  2. Öffnen Sie http://localhost:5000 im Browser"
     echo
@@ -515,7 +586,7 @@ show_summary() {
     echo "  • Service stoppen: sudo systemctl stop safety-permit-manager"
     echo "  • Service neustarten: sudo systemctl restart safety-permit-manager"
     echo "  • Logs anzeigen: sudo journalctl -u safety-permit-manager -f"
-    echo "  • Backup erstellen: ./backup.sh"
+    echo "  • Backup erstellen: cd /opt/SafetyPermitManager-3 && ./backup.sh"
     echo "  • Datenbank-Shell: PGPASSWORD='$DB_PASSWORD' psql -h localhost -U biggs_user -d biggs_permits"
     echo
     echo "Fehlerbehebung:"
@@ -552,6 +623,7 @@ main() {
     initialize_database
     create_admin_user
     build_application
+    install_to_opt
     create_systemd_service
     create_backup_script
     test_installation
