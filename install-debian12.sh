@@ -364,6 +364,22 @@ install_to_opt() {
     if [[ ! -d "$TARGET_DIR" ]]; then
         log_info "Kopiere Anwendung nach $TARGET_DIR..."
         sudo cp -r "$CURRENT_DIR" "$TARGET_DIR"
+    else
+        log_info "Aktualisiere Anwendung in $TARGET_DIR..."
+        # Kopiere nur die wichtigsten Dateien, aber bewahre .env
+        sudo cp -r "$CURRENT_DIR/dist" "$TARGET_DIR/" 2>/dev/null || true
+        sudo cp -r "$CURRENT_DIR/client" "$TARGET_DIR/" 2>/dev/null || true
+        sudo cp -r "$CURRENT_DIR/server" "$TARGET_DIR/" 2>/dev/null || true
+        sudo cp -r "$CURRENT_DIR/shared" "$TARGET_DIR/" 2>/dev/null || true
+        sudo cp "$CURRENT_DIR/package.json" "$TARGET_DIR/" 2>/dev/null || true
+        sudo cp "$CURRENT_DIR/package-lock.json" "$TARGET_DIR/" 2>/dev/null || true
+        sudo cp "$CURRENT_DIR/.env" "$TARGET_DIR/" 2>/dev/null || true
+    fi
+    
+    # Stelle sicher, dass .env existiert
+    if [[ ! -f "$TARGET_DIR/.env" ]] && [[ -f "$CURRENT_DIR/.env" ]]; then
+        log_info "Kopiere .env Datei nach $TARGET_DIR..."
+        sudo cp "$CURRENT_DIR/.env" "$TARGET_DIR/.env"
     fi
     
     # Setze korrekte Berechtigungen
@@ -372,10 +388,38 @@ install_to_opt() {
     sudo chmod -R 755 "$TARGET_DIR"
     
     # Sichere Berechtigungen für .env
-    sudo chmod 600 "$TARGET_DIR/.env"
+    if [[ -f "$TARGET_DIR/.env" ]]; then
+        sudo chmod 600 "$TARGET_DIR/.env"
+    fi
     
     # Wechsle in das neue Verzeichnis
     cd "$TARGET_DIR"
+    
+    # Erstelle Development-Wrapper Script
+    log_info "Erstelle Development-Wrapper Script..."
+    cat > dev.sh << 'EOF'
+#!/bin/bash
+# Development Wrapper Script für SafetyPermitManager-3
+# Lädt automatisch .env Datei
+
+# Wechsle ins Installationsverzeichnis
+cd /opt/SafetyPermitManager-3
+
+# Lade .env Datei
+if [[ -f ".env" ]]; then
+    export $(grep -v '^#' .env | xargs)
+    echo "✅ .env Datei geladen"
+else
+    echo "❌ .env Datei nicht gefunden!"
+    exit 1
+fi
+
+# Starte Development Server
+echo "🚀 Starte Development Server..."
+NODE_ENV=development npm run dev
+EOF
+    
+    chmod +x dev.sh
     
     log_success "Anwendung nach /opt installiert"
 }
@@ -561,12 +605,13 @@ show_summary() {
     echo
     echo "Wichtige Dateien:"
     echo "  • Konfiguration: /opt/SafetyPermitManager-3/.env"
+    echo "  • Development Script: /opt/SafetyPermitManager-3/dev.sh"
     echo "  • Backup Script: /opt/SafetyPermitManager-3/backup.sh"
     echo "  • Service: /etc/systemd/system/safety-permit-manager.service"
     echo
     echo "Nächste Schritte:"
     echo "  1. Starten Sie die Anwendung:"
-    echo "     cd /opt/SafetyPermitManager-3 && npm run dev  # Development"
+    echo "     /opt/SafetyPermitManager-3/dev.sh              # Development (empfohlen)"
     echo "     sudo systemctl start safety-permit-manager    # Production"
     echo
     echo "  2. Öffnen Sie http://localhost:5000 im Browser"
@@ -593,6 +638,8 @@ show_summary() {
     echo "  • Bei DATABASE_URL Fehlern: Prüfen Sie die .env Datei"
     echo "  • Service lädt .env automatisch: EnvironmentFile ist konfiguriert"
     echo "  • .env Berechtigungen: 600 (nur Besitzer kann lesen/schreiben)"
+    echo "  • .env Datei prüfen: cat /opt/SafetyPermitManager-3/.env | grep DATABASE_URL"
+    echo "  • Development mit .env: /opt/SafetyPermitManager-3/dev.sh"
     echo
     log_warning "WICHTIG: Notieren Sie sich das Datenbank-Passwort: $DB_PASSWORD"
     echo
